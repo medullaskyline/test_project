@@ -3,29 +3,29 @@ from testing_app.models import Category, Page
 from testing_app.forms import CategoryForm, UserProfileForm, UserForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-# new from http://ghickman.co.uk/2012/07/22/setup-single-sign-on-in-django-using-google-oauth2.html
-from django.core.urlresolvers import reverse
-from django.contrib import messages
-from django.views.generic.base import View
-from social_auth.backends.exceptions import AuthFailed
-from social_auth.views import complete
+# # new from http://ghickman.co.uk/2012/07/22/setup-single-sign-on-in-django-using-google-oauth2.html
+# from django.core.urlresolvers import reverse
+# from django.contrib import messages
+# from django.views.generic.base import View
+# from social_auth.backends.exceptions import AuthFailed
+# from social_auth.views import complete
 
 
-# new from http://ghickman.co.uk/2012/07/22/setup-single-sign-on-in-django-using-google-oauth2.html
-class AuthComplete(View):
-    def get(self, request, *args, **kwargs):
-        backend = kwargs.pop('backend')
-        try:
-            return complete(request, backend, *args, **kwargs)
-        except AuthFailed:
-            messages.error(request, "Your Google Apps domain isn't authorized for this app")
-            return HttpResponseRedirect(reverse('login'))
-
-
-# new from http://ghickman.co.uk/2012/07/22/setup-single-sign-on-in-django-using-google-oauth2.html
-class LoginError(View):
-    def get(self, request, *args, **kwargs):
-        return HttpResponse(status=401)
+# # new from http://ghickman.co.uk/2012/07/22/setup-single-sign-on-in-django-using-google-oauth2.html
+# class AuthComplete(View):
+#     def get(self, request, *args, **kwargs):
+#         backend = kwargs.pop('backend')
+#         try:
+#             return complete(request, backend, *args, **kwargs)
+#         except AuthFailed:
+#             messages.error(request, "Your Google Apps domain isn't authorized for this app")
+#             return HttpResponseRedirect(reverse('login'))
+#
+#
+# # new from http://ghickman.co.uk/2012/07/22/setup-single-sign-on-in-django-using-google-oauth2.html
+# class LoginError(View):
+#     def get(self, request, *args, **kwargs):
+#         return HttpResponse(status=401)
 
 
 def index(request):

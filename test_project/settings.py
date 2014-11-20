@@ -43,19 +43,19 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'testing_app',
-    'social_auth'
+    # 'social_auth'
 )
 
-AUTHENTICATION_BACKENDS = (
-    'social_auth.backends.google.GoogleOAuth2Backend',
-    'django.contrib.auth.backends.ModelBackend',
-)
-LOGIN_REDIRECT_URL = '/'
-
-GOOGLE_OAUTH2_CLIENT_ID = os.environ['GOOGLE_OAUTH2_CLIENT_ID']
-GOOGLE_OAUTH2_CLIENT_SECRET = os.environ['GOOGLE_OAUTH2_CLIENT_SECRET']
-GOOGLE_WHITE_LISTED_DOMAINS = ['incuna.com']
-SOCIAL_AUTH_USER_MODEL = 'auth.User'
+# AUTHENTICATION_BACKENDS = (
+#     'social_auth.backends.google.GoogleOAuth2Backend',
+#     'django.contrib.auth.backends.ModelBackend',
+# )
+# LOGIN_REDIRECT_URL = '/'
+#
+# GOOGLE_OAUTH2_CLIENT_ID = os.environ['GOOGLE_OAUTH2_CLIENT_ID']
+# GOOGLE_OAUTH2_CLIENT_SECRET = os.environ['GOOGLE_OAUTH2_CLIENT_SECRET']
+# GOOGLE_WHITE_LISTED_DOMAINS = ['incuna.com']
+# SOCIAL_AUTH_USER_MODEL = 'auth.User'
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
