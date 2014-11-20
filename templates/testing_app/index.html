@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+        {% load staticfiles %}
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+    <h1>testing_app says...</h1>
+
+    {% if categories %}
+        <h2>Categories</h2>
+        <ul>
+            {% for category in categories %}
+            <li><a href="/testing_app/category/{{ category.slug}}">{{ category.name }}</a></li>
+            {% endfor %}
+        </ul>
+        {% if pages %}
+            <h3>Top Viewed Pages</h3>
+            <ul>
+                {% for page in pages %}
+                    <li><a href="{{ page.url }}">{{ page.title }}</a></li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+    {% else %}
+        <strong>There are no categories present.</strong>
+    {% endif %}
+
+    <a href="/testing_app/about/">About</a><br />
+    <img src="{% static 'images/iverson-logo.png'%}" alt="iverson" /><br />
+    <a href="/testing_app/add_category/">Add a New Category</a><br />
+
+</body>
+</html>
