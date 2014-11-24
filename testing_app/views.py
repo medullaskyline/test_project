@@ -9,7 +9,8 @@ import os
 import logging
 import httplib2
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
+# from apiclient.discovery import build
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render_to_response
@@ -19,36 +20,50 @@ from oauth2client import xsrfutil
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.django_orm import Storage
 
-from django.contrib.auth.models import AnonymousUser
 from django.utils.functional import SimpleLazyObject
 
 
-CLIENT_SECRETS = os.path.join(os.path.dirname(__file__), '..', 'client_secrets.json')
+CLIENT_SECRETS = os.path.join(os.path.dirname(__file__), '..', 'client_secrets_web_app.json')
 
 FLOW = flow_from_clientsecrets(
     CLIENT_SECRETS,
     scope='https://www.googleapis.com/auth/plus.me',
-    redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+    redirect_uri='http://localhost:8000/testing_app/')
 
 
+# to do: separate login and user_login pages or views
+# ...user_login is supposed to have a User object obtained from request
 def user_login(request):
     # if request.method == 'POST':
 
+    # user = # A User object usually obtained from request.
+    if not isinstance(request.user, SimpleLazyObject):
+        print request.user.date_joined
+        print request.user.email
+        print request.user.first_name
+        print request.user.last_name
+        print request.user.is_active
+        print request.user.is_superuser
+        print request.user.username
                         # model_class, key_name, key_value, property_name
     storage = Storage(CredentialsModel, 'id', request.user, 'credential')
-    print request.user
-    print type(request.user)
-    if type(request.user) is not SimpleLazyObject:
+
+    if type(request.user) is not SimpleLazyObject:  # had to add this
         credential = storage.get()
-        print "here"
+        print "credential is not a simple lazy object"
     else:
         credential = None
     if credential is None or credential.invalid:
-
+        if credential:
+            print "credential " + credential + " is invalid"
+        else:
+            print "credential is none"
         FLOW.params['state'] = xsrfutil.generate_token(settings.SECRET_KEY, request.user)
         authorize_url = FLOW.step1_get_authorize_url()
+        print 'authorize url is ' + authorize_url
         return HttpResponseRedirect(authorize_url)
     else:
+        print "credential is valid"
         http = httplib2.Http()
         http = credential.authorize(http)
         service = build("testing_app", "v1", http=http)

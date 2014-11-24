@@ -33,21 +33,25 @@ class Page(models.Model):
         return self.title
 
 
-# class FlowModel(models.Model):
-#     id = models.ForeignKey(User, primary_key=True)
-#     flow = FlowField()
+# from https://developers.google.com/api-client-library/python/guide/django
+# Use the oauth2client.django_orm.FlowField class as a Django model field so
+# that Flow objects can easily be stored. When your application is simultaneously
+# going through OAuth 2.0 steps for many users, it's normally best to store
+# per-user Flow objects before the first redirection. This way, your redirection
+# handlers can retrieve the Flow object already created for the user.
+# In the following code, a model is defined that allows Flow objects to be stored and keyed by User:
+class FlowModel(models.Model):
+    id = models.ForeignKey(User, primary_key=True)
+    flow = FlowField()
 
 
+# Use the oauth2client.django_orm.CredentialsField class as a Django model field
+# so that Credentials objects can easily be stored. Similar to Flow objects, it's
+# normally best to store per-user Credentials objects. In the following code, a model
+# is defined that allows Credentials objects to be stored and keyed by User:
 class CredentialsModel(models.Model):
     id = models.ForeignKey(User, primary_key=True)
     credential = CredentialsField()
-
-
-class CredentialsAdmin(admin.ModelAdmin):
-    pass
-
-
-admin.site.register(CredentialsModel, CredentialsAdmin)
 
 
 class UserProfile(models.Model):
