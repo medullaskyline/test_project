@@ -1,7 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import User
-from oauth2client.django_orm import FlowField, CredentialsField
 from django.template.defaultfilters import slugify
+from django.contrib.auth.models import User
+
+from django.contrib import admin
+from oauth2client.django_orm import FlowField, CredentialsField
 
 
 class Category(models.Model):
@@ -31,14 +33,21 @@ class Page(models.Model):
         return self.title
 
 
-class FlowModel(models.Model):
-    id = models.ForeignKey(User, primary_key=True)
-    flow = FlowField()
+# class FlowModel(models.Model):
+#     id = models.ForeignKey(User, primary_key=True)
+#     flow = FlowField()
 
 
 class CredentialsModel(models.Model):
     id = models.ForeignKey(User, primary_key=True)
     credential = CredentialsField()
+
+
+class CredentialsAdmin(admin.ModelAdmin):
+    pass
+
+
+admin.site.register(CredentialsModel, CredentialsAdmin)
 
 
 class UserProfile(models.Model):

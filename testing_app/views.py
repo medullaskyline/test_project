@@ -4,6 +4,90 @@ from testing_app.forms import CategoryForm, UserProfileForm, UserForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 
+# from django_sample
+import os
+import logging
+import httplib2
+
+from apiclient.discovery import build
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseBadRequest
+from django.shortcuts import render_to_response
+from testing_app.models import CredentialsModel
+from test_project import settings
+from oauth2client import xsrfutil
+from oauth2client.client import flow_from_clientsecrets
+from oauth2client.django_orm import Storage
+
+from django.contrib.auth.models import AnonymousUser
+from django.utils.functional import SimpleLazyObject
+
+
+CLIENT_SECRETS = os.path.join(os.path.dirname(__file__), '..', 'client_secrets.json')
+
+FLOW = flow_from_clientsecrets(
+    CLIENT_SECRETS,
+    scope='https://www.googleapis.com/auth/plus.me',
+    redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+
+
+def user_login(request):
+    # if request.method == 'POST':
+
+                        # model_class, key_name, key_value, property_name
+    storage = Storage(CredentialsModel, 'id', request.user, 'credential')
+    print request.user
+    print type(request.user)
+    if type(request.user) is not SimpleLazyObject:
+        credential = storage.get()
+        print "here"
+    else:
+        credential = None
+    if credential is None or credential.invalid:
+
+        FLOW.params['state'] = xsrfutil.generate_token(settings.SECRET_KEY, request.user)
+        authorize_url = FLOW.step1_get_authorize_url()
+        return HttpResponseRedirect(authorize_url)
+    else:
+        http = httplib2.Http()
+        http = credential.authorize(http)
+        service = build("testing_app", "v1", http=http)
+        activities = service.activities()
+        activity_list = activities.list(collection='public',
+                                        userId='me').execute()
+        logging.info(activity_list)
+
+    return render_to_response('/testing_app', {
+                'activitylist': activity_list,
+                })
+
+
+        # username = request.POST['username']
+        # password = request.POST['password']
+        # user = authenticate(username=username, password=password)
+        #
+        # if user:
+        #     if user.is_active:
+        #         login(request, user)
+        #         return HttpResponseRedirect('/testing_app')
+        #     else:
+        #         return HttpResponseRedirect("Your Testing App account is disabled")
+        # else:
+        #     print "Invalid login details: {0}, {1}".format(username, password)
+        #     return HttpResponse("Invalid login details supplied.")
+    # else:
+    #     return render(request, 'testing_app/login.html', {})
+
+
+@login_required
+def restricted(request):
+    return HttpResponse("Since you're logged in, you can see this text!")
+
+@login_required
+def user_logout(request):
+    logout(request)
+    return HttpResponseRedirect('/testing_app/')
+
 
 def index(request):
     category_list = Category.objects.order_by('-likes')[:5]
@@ -108,31 +192,3 @@ def register(request):
             'testing_app/register.html',
             {'user_form': user_form, 'profile_form': profile_form, 'registered': registered} )
 
-
-def user_login(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(username=username, password=password)
-
-        if user:
-            if user.is_active:
-                login(request, user)
-                return HttpResponseRedirect('/testing_app')
-            else:
-                return HttpResponseRedirect("Your Testing App account is disabled")
-        else:
-            print "Invalid login details: {0}, {1}".format(username, password)
-            return HttpResponse("Invalid login details supplied.")
-    else:
-        return render(request, 'testing_app/login.html', {})
-
-
-@login_required
-def restricted(request):
-    return HttpResponse("Since you're logged in, you can see this text!")
-
-@login_required
-def user_logout(request):
-    logout(request)
-    return HttpResponseRedirect('/testing_app/')
