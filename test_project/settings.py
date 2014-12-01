@@ -43,19 +43,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'testing_app',
-    # 'social_auth'
 )
-
-# AUTHENTICATION_BACKENDS = (
-#     'social_auth.backends.google.GoogleOAuth2Backend',
-#     'django.contrib.auth.backends.ModelBackend',
-# )
-# LOGIN_REDIRECT_URL = '/'
-#
-# GOOGLE_OAUTH2_CLIENT_ID = os.environ['GOOGLE_OAUTH2_CLIENT_ID']
-# GOOGLE_OAUTH2_CLIENT_SECRET = os.environ['GOOGLE_OAUTH2_CLIENT_SECRET']
-# GOOGLE_WHITE_LISTED_DOMAINS = ['incuna.com']
-# SOCIAL_AUTH_USER_MODEL = 'auth.User'
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -75,12 +63,47 @@ WSGI_APPLICATION = 'test_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+# DATABASES = {
+#     # 'default': {
+#     #     'ENGINE': 'django.db.backends.sqlite3',
+#     #     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#     # }
+# }
+
+if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine'):
+    # Running on production App Engine, so use a Google Cloud SQL database.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'HOST': '/cloudsql/lateral-apex-771:my-lateral-instance',
+            'NAME': 'test',
+            'USER': 'root',
+            'PASSWORD': 'MyNewPass',
+        }
     }
-}
+elif os.getenv('SETTINGS_MODE') == 'prod':
+    # Running in development, but want to access the Google Cloud SQL instance
+    # in production.
+    print 'development with google cloud sql instance'
+    DATABASES = {
+        'default': {
+            'ENGINE': 'google.appengine.ext.django.backends.rdbms',
+            'INSTANCE': 'lateral-apex-771:my-lateral-instance',
+            'NAME': 'test',
+            'USER': 'root',
+        }
+    }
+else:
+    # Running in development, so use a local MySQL database.
+    print 'development is happening'
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'test',
+            'USER': 'root',
+            'PASSWORD': 'MyNewPass',
+        }
+    }
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
