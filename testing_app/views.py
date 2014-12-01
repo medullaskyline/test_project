@@ -3,9 +3,16 @@ from testing_app.models import Category, Page
 from testing_app.forms import CategoryForm, UserProfileForm, UserForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from settings import BASE_DIR
 
 
 def index(request):
+    print 'BASE_DIR = ' + BASE_DIR
+    # SETTINGS_DIR = BASE_DIR  # os.path.dirname(__file__)
+    # PROJECT_PATH = BASE_DIR  # os.path.join(SETTINGS_DIR, os.pardir)
+    # PROJECT_PATH = os.path.abspath(PROJECT_PATH)
+    # TEMPLATE_PATH = os.path.join(PROJECT_PATH, 'templates')
+    # STATIC_PATH = os.path.join(BASE_DIR, 'static')
     category_list = Category.objects.order_by('-likes')[:5]
     page_list = Page.objects.order_by('-views')[:5]
     context_dict = {'categories': category_list,
