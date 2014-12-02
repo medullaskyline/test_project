@@ -78,7 +78,7 @@ if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine'):
             'HOST': '/cloudsql/lateral-apex-771:my-lateral-instance',
             'NAME': 'test',
             'USER': 'root',
-            'PASSWORD': 'MyNewPass',
+            # 'PASSWORD': 'MyNewPass',
         }
     }
 elif os.getenv('SETTINGS_MODE') == 'prod':
