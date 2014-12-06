@@ -1,5 +1,6 @@
 from django.conf.urls import patterns, url
 from testing_app import views
+from django.contrib.auth.views import login
 
 urlpatterns = patterns('',
                        url(r'^$', views.index, name='index'),
@@ -10,4 +11,5 @@ urlpatterns = patterns('',
                        url(r'^login/$', views.user_login, name='login'),
                        url(r'^restricted/', views.restricted, name='restricted'),
                        url(r'^logout/$', views.user_logout, name='logout'),
+                       url(r'^oauth2callback', views.auth_return, name='auth_return'),
                        )

@@ -84,7 +84,7 @@ if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine'):
 elif os.getenv('SETTINGS_MODE') == 'prod':
     # Running in development, but want to access the Google Cloud SQL instance
     # in production.
-    print 'development with google cloud sql instance'
+    print 'dev with google cloud sql instance'
     DATABASES = {
         'default': {
             'ENGINE': 'google.appengine.ext.django.backends.rdbms',
@@ -95,7 +95,7 @@ elif os.getenv('SETTINGS_MODE') == 'prod':
     }
 else:
     # Running in development, so use a local MySQL database.
-    print 'development is happening'
+    print 'dev is happening'
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',

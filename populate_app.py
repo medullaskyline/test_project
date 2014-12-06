@@ -1,8 +1,9 @@
 import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'test_project.settings')
 
-import django
-django.setup()
+# for local use (django 1.7) uncomment next 2 lines
+# import django
+# django.setup()
 
 from testing_app.models import Category, Page
 

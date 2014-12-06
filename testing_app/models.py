@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-# from oauth2client.django_orm import FlowField, CredentialsField
+from oauth2client.django_orm import FlowField, CredentialsField
 from django.template.defaultfilters import slugify
 
 
@@ -34,11 +34,11 @@ class Page(models.Model):
 # class FlowModel(models.Model):
 #     id = models.ForeignKey(User, primary_key=True)
 #     flow = FlowField()
-#
-#
-# class CredentialsModel(models.Model):
-#     id = models.ForeignKey(User, primary_key=True)
-#     credential = CredentialsField()
+
+
+class CredentialsModel(models.Model):
+    id = models.ForeignKey(User, primary_key=True)
+    credential = CredentialsField()
 
 
 class UserProfile(models.Model):
