@@ -4,6 +4,26 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title></title>
+<script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
+<link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
+<script type=text/javascript>
+  window.google.identitytoolkit.signInButton(
+    '#button', // accepts any CSS selector
+    {
+      widgetUrl: "http://sharp-imprint-787.appspot.com/widget",
+      signOutUrl: "/",
+    }
+  );
+</script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+
 </head>
 <body>
     {% if user.is_authenticated %}
@@ -11,7 +31,7 @@
     {% else %}
     <h1>testing_app says... hello</h1>
     {% endif %}
-
+    <div id="button"></div>
     {% if categories %}
         <h2>Categories</h2>
         <ul>
@@ -44,7 +64,6 @@
     {% endif %}
 
     <a href="/testing_app/about/">About</a><br />
-    <a href="/testing_app/oauth_login">Oauth Login</a>
 
 </body>
 </html>

@@ -75,7 +75,7 @@ if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'HOST': '/cloudsql/lateral-apex-771:my-lateral-instance',
+            'HOST': '/cloudsql/sharp-imprint-787:my-sharp-instance',
             'NAME': 'test',
             'USER': 'root',
             # 'PASSWORD': 'MyNewPass',
@@ -88,7 +88,7 @@ elif os.getenv('SETTINGS_MODE') == 'prod':
     DATABASES = {
         'default': {
             'ENGINE': 'google.appengine.ext.django.backends.rdbms',
-            'INSTANCE': 'lateral-apex-771:my-lateral-instance',
+            'INSTANCE': 'sharp-imprint-787:my-sharp-instance',
             'NAME': 'test',
             'USER': 'root',
         }

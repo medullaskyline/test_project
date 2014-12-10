@@ -28,57 +28,58 @@ FLOW = flow_from_clientsecrets(
     redirect_uri='http://localhost:8000/testing_app/oauth2callback')  # same as going to auth_return
 
 
-def index(request):
-    print 'at the index request.user is ' + str(type(request.user))
-    # problem here is it asks for the django user
-    # if not logged in, it's AnonymousUser (of type SimpleLazyObject)
-    # if logged in, it's the django user, not the gmail user
-    # should make a way to
+# def index(request):
+#     print 'at the index request.user is ' + str(type(request.user))
+#
+#     storage = Storage(CredentialsModel, 'id', request.user, 'credential')
+#     credential = None
+#     if type(request.user) is not SimpleLazyObject:
+#         credential = storage.get()
+#     if credential is None or credential.invalid:
+#         FLOW.params['state'] = xsrfutil.generate_token(settings.SECRET_KEY, request.user)
+#         authorize_url = FLOW.step1_get_authorize_url()
+#         # authorize_url is the auth_uri from client_secrets with query params...
+#         # client_id, redirect_uri, and scope (but not state (opt) or response_type=code (req)??
+#         # this HttpResponseRedirect will go first to auth_uri (google), then to redirect uri (the auth_return view)
+#         return HttpResponseRedirect(authorize_url)
+#     else:
+#         http = httplib2.Http()
+#         http = credential.authorize(http)
+#         service = build("plus", "v1", http=http)
+#         activities = service.activities()
+#         activitylist = activities.list(collection='public',
+#                                        userId='me').execute()
+#         logging.info(activitylist)
+#         category_list = Category.objects.order_by('-likes')[:5]
+#         page_list = Page.objects.order_by('-views')[:5]
+#         context_dict = {'categories': category_list,
+#                         'pages': page_list,
+#                         'activitylist': activitylist
+#                         }
+#
+#         return render_to_response('testing_app/index.html', context_dict)
 
-    storage = Storage(CredentialsModel, 'id', request.user, 'credential')
-    credential = None
-    if type(request.user) is not SimpleLazyObject:
-        credential = storage.get()
-    if credential is None or credential.invalid:
-        FLOW.params['state'] = xsrfutil.generate_token(settings.SECRET_KEY, request.user)
-        authorize_url = FLOW.step1_get_authorize_url()
-        # authorize_url is the auth_uri from client_secrets with query params...
-        # client_id, redirect_uri, and scope (but not state (opt) or response_type=code (req)??
-        # this HttpResponseRedirect will go first to auth_uri, then to redirect uri (the auth_return view)
-        return HttpResponseRedirect(authorize_url)
-    else:
-        http = httplib2.Http()
-        http = credential.authorize(http)
-        service = build("plus", "v1", http=http)
-        activities = service.activities()
-        activitylist = activities.list(collection='public',
-                                       userId='me').execute()
-        logging.info(activitylist)
-        category_list = Category.objects.order_by('-likes')[:5]
-        page_list = Page.objects.order_by('-views')[:5]
-        context_dict = {'categories': category_list,
-                        'pages': page_list,
-                        'activitylist': activitylist
-                        }
+def index(request):  # old
+    category_list = Category.objects.order_by('-likes')[:5]
+    page_list = Page.objects.order_by('-views')[:5]
+    context_dict = {'categories': category_list,
+                    'pages': page_list}
+    return render(request, 'testing_app/index.html', context_dict)
 
-        return render_to_response('plus/welcome.html', context_dict)
 
-# def index(request):  # old
-#     category_list = Category.objects.order_by('-likes')[:5]
-#     page_list = Page.objects.order_by('-views')[:5]
-#     context_dict = {'categories': category_list,
-#                     'pages': page_list}
-#     return render(request, 'testing_app/index.html', context_dict)
+def widget(request):
+    return render(request, 'testing_app/widget.html', {})
 
 
 def auth_return(request):
-    # problem is that request.user asks for django user, not oauth2 user.
-    print 'request.user is ' + str(request.user)
+    # print request
+    # problem is that request.user has to be a django.contrib.auth.models.User
 
     if not xsrfutil.validate_token(settings.SECRET_KEY, request.REQUEST['state'], request.user):
         return HttpResponseBadRequest()
     credential = FLOW.step2_exchange(request.REQUEST)
-    print 'credential\'s user agent is ' + str(credential.user_agent)
+    # print 'credential.invalid is ' + str(credential.invalid)
+    # print 'credential\'s user agent is ' + str(credential.user_agent)
 
     storage = Storage(CredentialsModel, 'id', request.user, 'credential')
 
@@ -87,7 +88,7 @@ def auth_return(request):
     print 'is superuser is ' + str(request.user.is_superuser)
 
     storage.put(credential)
-    return HttpResponseRedirect("./add_category/")  # goes back to index view
+    return HttpResponseRedirect("/testing_app/")  # goes back to index view if return HttpResponseRedirect("/testing_app/")
 
 
 def category(request, category_name_slug):
@@ -105,7 +106,7 @@ def category(request, category_name_slug):
     except Category.DoesNotExist:
         pass
 
-    return render(request, '/testing_app/', context_dict)  # when logged in as a django user, with django admin, does a redirect loop
+    return render(request, 'testing_app/category.html', context_dict)  # when logged in as a django user, with django admin, does a redirect loop
 
 
 def add_category(request):

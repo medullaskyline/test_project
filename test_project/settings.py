@@ -68,7 +68,7 @@ if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'HOST': '/cloudsql/lateral-apex-771:my-lateral-instance',
+            'HOST': '/cloudsql/sharp-imprint-787:my-sharp-instance',  # change this to sharp-imprint?
             'NAME': 'test',
             'USER': 'root',
             'PASSWORD': 'MyNewPass',
@@ -78,18 +78,10 @@ elif os.getenv('SETTINGS_MODE') == 'prod':
     # Running in development, but want to access the Google Cloud SQL instance
     # in production.
     print 'development with google cloud sql instance'
-    # DATABASES = {
-    #     'default': {
-    #         'ENGINE': 'google.appengine.ext.django.backends.rdbms',
-    #         'INSTANCE': 'lateral-apex-771:my-lateral-instance',
-    #         'NAME': 'test',
-    #         'USER': 'root',
-    #     }
-    # }
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'INSTANCE': 'lateral-apex-771:my-lateral-instance',
+            'INSTANCE': 'sharp-imprint-787:my-sharp-instance',  # change this to sharp-imprint?
             'NAME': 'test',
             'USER': 'root',
             'PASSWORD': 'MyNewPass',
