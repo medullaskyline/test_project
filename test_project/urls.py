@@ -11,7 +11,6 @@ urlpatterns = patterns('',
     url(r'^$', views.index, name='index'),
     url(r'^widget', views.widget, name='widget'),
     url(r'^testing_app/', include('testing_app.urls')),
-    url(r'^admin/', include(admin.site.urls)),
 )
 
 if settings.DEBUG:

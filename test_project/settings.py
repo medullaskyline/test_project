@@ -68,10 +68,10 @@ if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'HOST': '/cloudsql/sharp-imprint-787:my-sharp-instance',  # change this to sharp-imprint?
+            'HOST': '/cloudsql/sharp-imprint-787:my-sharp-instance',
             'NAME': 'test',
             'USER': 'root',
-            'PASSWORD': 'MyNewPass',
+            # 'PASSWORD': 'MyNewPass',
         }
     }
 elif os.getenv('SETTINGS_MODE') == 'prod':
@@ -81,10 +81,11 @@ elif os.getenv('SETTINGS_MODE') == 'prod':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'INSTANCE': 'sharp-imprint-787:my-sharp-instance',  # change this to sharp-imprint?
+            'HOST': '/cloudsql/sharp-imprint-787:my-sharp-instance',
+            # 'INSTANCE': 'sharp-imprint-787:my-sharp-instance',
             'NAME': 'test',
             'USER': 'root',
-            'PASSWORD': 'MyNewPass',
+            # 'PASSWORD': 'MyNewPass',
         }
     }
 else:

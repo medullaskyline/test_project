@@ -6,15 +6,28 @@
     <title></title>
 <script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
 <link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
-<script type=text/javascript>
-  window.google.identitytoolkit.signInButton(
-    '#button', // accepts any CSS selector
-    {
-      widgetUrl: "http://localhost:8080/widget",
-      signOutUrl: "/",
-    }
-  );
-</script>
+<!--<script type=text/javascript>-->
+  <!--window.google.identitytoolkit.signInButton(-->
+    <!--'#button', // accepts any CSS selector-->
+    <!--{-->
+      <!--widgetUrl: "http://localhost:8000/widget",-->
+      <!--signOutUrl: "/",-->
+    <!--}-->
+  <!--);-->
+<!--</script>-->
+  <!--if the user is signed out of django...-->
+{% if not user.is_authenticated %}
+    <script>
+        // console.log("user is not authenticated");
+        // ...but the user is still signed into google+...
+        if(document.cookie.search('gtoken') > -1){
+            // ...sign the user out of google+
+            google.identitytoolkit.signOut();
+            // In the future, here is where we could put messages describing why
+            // the google+ user isn't allowed to sign in
+        }
+    </script>
+{% endif %}
 <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
 
@@ -27,9 +40,11 @@
 </head>
 <body>
     {% if user.is_authenticated %}
-    <h1>Testing App says hi {{ user.username }}</h1>
+        {{ user.first_name }} {{ user.last_name }}. You are logged in as
+        {{ user.username }}
+        [<a href="/testing_app/gitkit_logout/">sign out</a>]
     {% else %}
-    <h1>Testing App says... hello</h1>
+             [<a href="/widget?mode=select">Sign In</a>]
     {% endif %}
 
     <!--<pre>{{ userinfo }}</pre>-->
@@ -55,7 +70,10 @@
     {% endif %}
 
     <img src="{% static 'images/iverson-logo.png'%}" alt="iverson" /><br />
-
+    <pre>{{ activitylist }}</pre><br/>
+    {% for activity in activitylist.iteritems %}
+        <pre>{{ activity }}</pre><br/>
+    {% endfor %}
     {% if user.is_authenticated %}
     <a href="/testing_app/restricted/">Restricted Page</a><br />
     <!--<a href="/testing_app/logout">Logout</a><br />-->

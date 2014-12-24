@@ -31,9 +31,9 @@ class Page(models.Model):
         return self.title
 
 
-# class FlowModel(models.Model):
-#     id = models.ForeignKey(User, primary_key=True)
-#     flow = FlowField()
+class FlowModel(models.Model):
+    id = models.ForeignKey(User, primary_key=True)
+    flow = FlowField()
 
 
 class CredentialsModel(models.Model):

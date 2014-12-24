@@ -6,17 +6,27 @@ from django.shortcuts import render, HttpResponseRedirect, HttpResponse, render_
 from django.http import HttpResponseBadRequest
 from testing_app.models import Category, Page, CredentialsModel
 from testing_app.forms import CategoryForm, UserProfileForm, UserForm
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from oauth2client import xsrfutil
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.django_orm import Storage
 from apiclient.discovery import build
+from django.contrib.auth.decorators import login_required
 from test_project import settings
 from django.utils.functional import SimpleLazyObject
 from identitytoolkit import gitkitclient
-# from cookielib import Cookie
+from django.db.models import Max
+from django.db import IntegrityError
+from random import randint
+import base64
+import time
+import json
+import urllib
+import urllib2
+
+
 
 
 # CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
@@ -27,103 +37,224 @@ CLIENT_SECRETS = os.path.join(os.path.dirname(__file__), '..', 'client_secrets.j
 
 FLOW = flow_from_clientsecrets(
     CLIENT_SECRETS,
-    scope='https://www.googleapis.com/auth/plus.me',
+    scope='openid email',  # 'https://www.googleapis.com/auth/plus.me',
     redirect_uri='http://localhost:8000/testing_app/oauth2callback')  # same as going to auth_return
 
 
-# def index(request):
-#     print 'at the index request.user is ' + str(type(request.user))
+def index(request):
+    print '\nat the index request.user is ' + str(request.user) + ' with id of ' + str(request.user)
+
+    credential = None
+    if request.user.is_authenticated():
+        print '\nuser is authenticated '
+        storage = Storage(CredentialsModel, 'id', request.user, 'credential')
+        credential = storage.get()
+    if credential is None or credential.invalid:
+        if credential is None:
+            print '\ncredential is none'
+        else:
+            print '\ncredential invalid'
+        FLOW.params['state'] = xsrfutil.generate_token(settings.SECRET_KEY, request.user)
+        # print '\n flow.params[state] is ' + str(FLOW.params['state'])
+        authorize_url = FLOW.step1_get_authorize_url()
+        print '\nauthorize_url is ' + str(authorize_url)
+        # authorize_url is the auth_uri from client_secrets with query params...
+        # client_id, redirect_uri, and scope (but not state (opt) or response_type=code (req)??
+        # this HttpResponseRedirect will go first to auth_uri (google), then to redirect uri (the auth_return view)
+        return HttpResponseRedirect(authorize_url)
+    else:
+        print '\nhere, logged in as ' + request.user.first_name
+        http = httplib2.Http()
+        http = credential.authorize(http)
+        service = build("plus", "v1", http=http)
+        activities = service.activities()
+        activitylist = activities.list(collection='public',
+                                       userId='me').execute()
+        logging.info(activitylist)
+        category_list = Category.objects.order_by('-likes')[:5]
+        page_list = Page.objects.order_by('-views')[:5]
+        context_dict = {'categories': category_list,
+                        'pages': page_list,
+                        'activitylist': activitylist
+                        }
+
+        return render_to_response('testing_app/index.html', context_dict)
+
+
+def auth_return(request):
+    if not validate_token(settings.SECRET_KEY, request.REQUEST['state'], request.user):
+        # used to be xsrfutil.validate_token but apparently problems in source code
+        return HttpResponseBadRequest()
+    credential = FLOW.step2_exchange(request.REQUEST)
+
+    cred_json = json.loads(credential.to_json())
+    email_from_id_token = cred_json["id_token"]["email"]
+
+    url = 'https://www.googleapis.com/oauth2/v1/userinfo?access_token=' + cred_json["access_token"]
+    # or https://www.googleapis.com/plus/v1/people/me?access_token=
+    req = urllib2.Request(url)
+    response = urllib2.urlopen(req)
+    # from response get id, email, verified_email, name, given_name, family_name, link, picture, hd
+    user_info = {}
+    for line in response.readlines():
+        line = line.strip()
+        if not line or line is '{' or line is '}':
+            pass
+        else:
+            (key, val) = line.split(': ')
+            key = key[key.find('"')+1:key.rfind('"')]
+            val = val[val.find('"')+1:val.rfind('"')]
+            if val == 'true':
+                val = True
+            if val == 'false':
+                val = False
+            if key == 'id':
+                val = int(val)
+            user_info[key] = val
+    # print 'user_info is ' + str(user_info)
+    id_from_user_info = user_info['id']
+    # print '\nid is ' + str(id_from_user_info)
+
+    if cred_json["id_token"]["email_verified"]:
+        if request.user.is_authenticated():
+            logout(request)
+        user = User.objects.get(username=email_from_id_token)
+
+        if user is None:
+            print '\nhere'
+            User.objects.create_user(username=email_from_id_token, email=email_from_id_token, password=id_from_user_info)
+            user.set_password(id_from_user_info)
+            user.first_name = user_info['given_name']
+            user.last_name = user_info['family_name']
+            user.email = email_from_id_token
+            user.save()
+        user = authenticate(username=email_from_id_token, password=id_from_user_info)
+        login(request, user)
+
+        storage = Storage(CredentialsModel, 'id', user, 'credential')
+        storage.put(credential)
+        return render(request, "/testing_app/")
+    else:
+        return HttpResponse('email not verified')
+
+
+
+    # then get user info from curl https://www.googleapis.com/oauth2/v1/userinfo?access_token= [access token here]
+    # when scope is 'openid email', response is
+    # {
+    # "id": "104512635923656525092",
+    # "email": "kiverson@systemsbiology.org",
+    # "verified_email": true,
+    # "name": "Kelly Iverson",
+    # "given_name": "Kelly",
+    # "family_name": "Iverson",
+    # "link": "https://plus.google.com/104512635923656525092",
+    # "picture": "https://lh6.googleusercontent.com/-eSNXFhGK28k/AAAAAAAAAAI/AAAAAAAAAEI/dV80f0ioAHo/photo.jpg",
+    # "hd": "systemsbiology.org"
+    # }
+    # when scope is 'https://www.googleapis.com/auth/plus.me', response is
+    # {
+    #  "id": "104512635923656525092",
+    #  "name": "Kelly Iverson",
+    #  "given_name": "Kelly",
+    #  "family_name": "Iverson",
+    #  "link": "https://plus.google.com/104512635923656525092",
+    #  "picture": "https://lh6.googleusercontent.com/-eSNXFhGK28k/AAAAAAAAAAI/AAAAAAAAAEI/dV80f0ioAHo/photo.jpg"
+    # }
+    # consider trying https://www.googleapis.com/plus/v1/people/<id> (id='me' for currently logged in user)
+
+def validate_token(key, token, user_id):
+    if not token:
+        return False
+    try:
+        decoded = base64.urlsafe_b64decode(str(token))
+        token_time = long(decoded.split(':')[-1])
+    except (TypeError, ValueError):
+        return False
+    if time.time() - token_time > 60*60:
+        return False
+
+    expected_token = xsrfutil.generate_token(key, user_id, when=token_time)
+
+    if len(token) != len(expected_token):
+        return False
+    different = 0
+    for x, y in zip(token, expected_token):
+        different |= ord(x) ^ ord(y)
+    if different:
+        return False
+
+    return True
+
+# gitkit_instance = gitkitclient.GitkitClient.FromConfigFile('gitkit-server-config.json')
+
+
+# def index(request):  # this is for gitkitclient
 #
-#     storage = Storage(CredentialsModel, 'id', request.user, 'credential')
-#     credential = None
-#     if type(request.user) is not SimpleLazyObject:
-#         credential = storage.get()
-#     if credential is None or credential.invalid:
-#         FLOW.params['state'] = xsrfutil.generate_token(settings.SECRET_KEY, request.user)
-#         authorize_url = FLOW.step1_get_authorize_url()
-#         # authorize_url is the auth_uri from client_secrets with query params...
-#         # client_id, redirect_uri, and scope (but not state (opt) or response_type=code (req)??
-#         # this HttpResponseRedirect will go first to auth_uri (google), then to redirect uri (the auth_return view)
-#         return HttpResponseRedirect(authorize_url)
+#     category_list = Category.objects.order_by('-likes')[:5]
+#     page_list = Page.objects.order_by('-views')[:5]
+#     context_dict = {'categories': category_list,
+#                     'pages': page_list,
+#                     'userinfo': ''}
+#     if 'gtoken' in request.COOKIES:
+#         gitkit_user = gitkit_instance.VerifyGitkitToken(request.COOKIES['gtoken'])
+#         if gitkit_user:
+#             # change how user is stored -- maybe id of user in database = user_id as well?
+#             user = authenticate(username=gitkit_user.email, password=gitkit_user.user_id)
+#             if user is None:
+#                 # and gitkit_user.user_id not in global user dictionary
+#                 # in the future, can opt to not log in by removing the gtoken cookie
+#                 # remove gtoken (or session?) cookie by setting its max-age to zero
+#                 first_name = None
+#                 last_name = None
+#                 gitkit_user_by_email = gitkit_instance.GetUserByEmail(gitkit_user.email)
+#                 if gitkit_user_by_email:
+#                     first_name = gitkit_user_by_email.name.split(' ')[0]
+#                     last_name = gitkit_user_by_email.name.split(' ')[1]
+#                 try:
+#                     User.objects.create_user(
+#                         id=User.objects.all().aggregate(Max('id'))['id__max']+1,
+#                         username=gitkit_user.email,
+#                         email=gitkit_user.email,
+#                         password=gitkit_user.user_id,
+#                         first_name=first_name,
+#                         last_name=last_name
+#                     )
+#                     user = authenticate(username=gitkit_user.email, password=gitkit_user.user_id)
+#
+#                 except IntegrityError, e:
+#                     print '\nerror is ' + str(e)
+#                     print 'user id is ' + ' and gitkit id is ' + str(gitkit_user.user_id)
+#
+#                     return render(request, 'testing_app/index.html', context_dict)
+#             context_dict['userinfo'] = str(vars(gitkit_user))
+#             login(request, user)
+#             # user.save() # ??
+#         else:
+#             print '\n invalid gtoken'
+#             # this shouldn't ever happen
+#             logout(request)
 #     else:
-#         http = httplib2.Http()
-#         http = credential.authorize(http)
-#         service = build("plus", "v1", http=http)
-#         activities = service.activities()
-#         activitylist = activities.list(collection='public',
-#                                        userId='me').execute()
-#         logging.info(activitylist)
-#         category_list = Category.objects.order_by('-likes')[:5]
-#         page_list = Page.objects.order_by('-views')[:5]
-#         context_dict = {'categories': category_list,
-#                         'pages': page_list,
-#                         'activitylist': activitylist
-#                         }
-#
-#         return render_to_response('testing_app/index.html', context_dict)
-
-gitkit_instance = gitkitclient.GitkitClient.FromConfigFile('gitkit-server-config.json')
+#         # if the user has no active session on your site you may redirect to https://yoursite.com/signin?mode=select
+#         logout(request)
+#     return render(request, 'testing_app/index.html', context_dict)
 
 
-def index(request):  # this is for gitkitclient
-
+def gitkit_logout(request):
+    # this just logs out of django, not google+
+    # the javascript on the index.html page logs out of google+ when it sees the django user is logged out
+    logout(request)
+    # shouldn't have to populate context_dict again -- find alternative
     category_list = Category.objects.order_by('-likes')[:5]
     page_list = Page.objects.order_by('-views')[:5]
     context_dict = {'categories': category_list,
                     'pages': page_list,
                     'userinfo': ''}
-    if 'gtoken' in request.COOKIES:
-        gitkit_user = gitkit_instance.VerifyGitkitToken(request.COOKIES['gtoken'])
-        if gitkit_user:
-            # change how user is stored -- maybe id of user in database = user_id as well?
-
-            user = authenticate(username=gitkit_user.email, password=gitkit_user.user_id)
-            if user is None: # and gitkit_user.user_id not in global user dictionary
-                # in the future, can opt to not log in by removing the gtoken cookie
-                # remove gtoken (or session?) cookie by setting its max-age to zero
-
-                user = User.objects.create_user(gitkit_user.email, gitkit_user.email, gitkit_user.user_id)
-                print 'made user ' + str(gitkit_user.email) + ' with pw ' + str(gitkit_user.user_id)
-            login(request, user)
-            context_dict['userinfo'] = str(vars(gitkit_user))
-        else:
-            logout(request)
-    else:
-        # if the user has no active session on your site you may redirect to https://yoursite.com/signin?mode=select
-        logout(request)
     return render(request, 'testing_app/index.html', context_dict)
-
-
-# def index(request):  # old
-#     category_list = Category.objects.order_by('-likes')[:5]
-#     page_list = Page.objects.order_by('-views')[:5]
-#     context_dict = {'categories': category_list,
-#                     'pages': page_list}
-#     return render(request, 'testing_app/index.html', context_dict)
 
 
 def widget(request):
     return render(request, 'testing_app/widget.html', {})
-
-
-def auth_return(request):
-    # print request
-    # problem is that request.user has to be a django.contrib.auth.models.User
-
-    if not xsrfutil.validate_token(settings.SECRET_KEY, request.REQUEST['state'], request.user):
-        return HttpResponseBadRequest()
-    credential = FLOW.step2_exchange(request.REQUEST)
-    # print 'credential.invalid is ' + str(credential.invalid)
-    # print 'credential\'s user agent is ' + str(credential.user_agent)
-
-    storage = Storage(CredentialsModel, 'id', request.user, 'credential')
-
-    print 'storage.key_value is ' + str(storage.key_value)
-    print 'username is ' + str(request.user.username)
-    print 'is superuser is ' + str(request.user.is_superuser)
-
-    storage.put(credential)
-    return HttpResponseRedirect("/testing_app/")  # goes back to index view if return HttpResponseRedirect("/testing_app/")
 
 
 def category(request, category_name_slug):
